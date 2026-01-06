@@ -55,12 +55,13 @@ jobs:
           tuist install
           tuist generate
 
-      # --- 编译与打包 ---
+# --- 编译与打包 ---
 
       - name: Build Cork (Stable Release)
         run: |
           # 显式指定 arch=arm64
-          xcodebuild -scheme Cork -configuration Release -derivedDataPath build -destination 'platform=macOS,arch=arm64' clean build
+          # 修改点：添加 -workspace Cork.xcworkspace
+          xcodebuild -workspace Cork.xcworkspace -scheme Cork -configuration Release -derivedDataPath build -destination 'platform=macOS,arch=arm64' clean build
 
       - name: Compress App
         run: |
