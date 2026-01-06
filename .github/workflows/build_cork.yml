@@ -51,17 +51,19 @@ jobs:
           # 针对 Xcode 26 的安全策略
           defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
           
-          # 安装依赖
           tuist install
+          # 修改点：添加环境变量 TUIST_SELF_COMPILED=1
+          export TUIST_SELF_COMPILED=1
           tuist generate
 
 # --- 编译与打包 ---
 
       - name: Build Cork (Stable Release)
         run: |
-          # 显式指定 arch=arm64
-          # 修改点：添加 -workspace Cork.xcworkspace
-          xcodebuild -workspace Cork.xcworkspace -scheme Cork -configuration Release -derivedDataPath build -destination 'platform=macOS,arch=arm64' clean build
+          # 修改点：
+          # 1. 添加 -workspace Cork.xcworkspace (解决依赖报错)
+          # 2. 将 -scheme Cork 改为 -scheme "Self-Compiled" (解决许可证验证)
+          xcodebuild -workspace Cork.xcworkspace -scheme "Self-Compiled" -configuration Release -derivedDataPath build -destination 'platform=macOS,arch=arm64' clean build
 
       - name: Compress App
         run: |
