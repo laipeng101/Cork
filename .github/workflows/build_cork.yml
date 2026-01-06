@@ -1,0 +1,85 @@
+name: Build Latest Stable Cork
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1' # 每周一自动检查更新
+
+jobs:
+  build-stable:
+    # 依然使用 macOS 26 (Tahoe) 环境
+    runs-on: macos-26
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取所有历史以检测 Tag
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+
+      - name: Sync and Checkout Latest Tag
+        run: |
+          # 1. 添加上游仓库
+          git remote add upstream https://github.com/buresdv/Cork.git || true
+          git fetch upstream --tags
+          
+          # 2. 获取最新的版本号 Tag (排除 alpha/beta)
+          # 逻辑：列出所有 v 开头的 tag -> 排序 -> 取最后一个
+          LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
+          
+          echo "🔥 Detected latest stable version: $LATEST_TAG"
+          
+          # 3. 强制切换到这个 Tag
+          git checkout $LATEST_TAG
+          
+          # 注意：这里我们不再合并 main，因为我们要编译的是纯净的发布版
+
+      # --- 环境准备 ---
+      
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
+      - name: Generate Project with Tuist
+        run: |
+          # 针对 Xcode 26 的安全策略
+          defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
+          
+          # 安装依赖
+          tuist install
+          tuist generate
+
+      # --- 编译与打包 ---
+
+      - name: Build Cork (Stable Release)
+        run: |
+          # 显式指定 arch=arm64
+          xcodebuild -scheme Cork -configuration Release -derivedDataPath build -destination 'platform=macOS,arch=arm64' clean build
+
+      - name: Compress App
+        run: |
+          APP_PATH=$(find build -name "Cork.app" -type d | head -n 1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "❌ Error: 未找到 Cork.app，编译可能失败！"
+            exit 1
+          fi
+          
+          echo "✅ Found app at: $APP_PATH"
+          
+          # 获取版本号作为文件名的一部分
+          VERSION_NAME=$(git describe --tags --abbrev=0)
+          tar -czf "Cork-${VERSION_NAME}.tar.gz" -C "$(dirname "$APP_PATH")" Cork.app
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cork-Stable-Build
+          path: Cork-*.tar.gz
+          retention-days: 90
