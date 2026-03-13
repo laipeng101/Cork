@@ -10,11 +10,12 @@ import SwiftUI
 import CorkShared
 import CorkTerminalFunctions
 import CorkModels
+import Defaults
 
 @MainActor
 func refreshPackages(_ updateProgressTracker: UpdateProgressTracker, outdatedPackagesTracker: OutdatedPackagesTracker) async -> PackageUpdateAvailability
 {
-    let showRealTimeTerminalOutputs: Bool = UserDefaults.standard.bool(forKey: "showRealTimeTerminalOutputOfOperations")
+    let showRealTimeTerminalOutputs: Bool = Defaults[.showRealTimeTerminalOutputOfOperations]
 
     for await output in shell(AppConstants.shared.brewExecutablePath, ["update"])
     {
@@ -30,7 +31,7 @@ func refreshPackages(_ updateProgressTracker: UpdateProgressTracker, outdatedPac
 
             updateProgressTracker.updateProgress = updateProgressTracker.updateProgress + 0.1
 
-            if outdatedPackagesTracker.displayableOutdatedPackages.isEmpty
+            if outdatedPackagesTracker.allDisplayableOutdatedPackages.isEmpty
             {
                 if outputLine.starts(with: "Already up-to-date")
                 {

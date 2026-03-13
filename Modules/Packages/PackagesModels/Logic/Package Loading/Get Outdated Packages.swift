@@ -63,22 +63,23 @@ public extension OutdatedPackagesTracker
     func getOutdatedPackages(brewPackagesTracker: BrewPackagesTracker) async throws
     {
         /// ``Set<OutdatedPackage>`` that holds packages whose updates are managed by Homebrew
-        async let outdatedPackagesNonGreedy: Set<OutdatedPackage> = try await getOutdatedPackagesInternal(brewPackagesTracker: brewPackagesTracker, forUpdatingType: .homebrew)
+        let outdatedPackagesNonGreedy: Set<OutdatedPackage> = try await getOutdatedPackagesInternal(brewPackagesTracker: brewPackagesTracker, forUpdatingType: .homebrew)
 
         /// ``Set<OutdatedPackage>`` that holds packages whose updates are managed by Homebrew, plus those that are not
-        async let outdatedPackagesGreedy: Set<OutdatedPackage> = try await getOutdatedPackagesInternal(brewPackagesTracker: brewPackagesTracker, forUpdatingType: .selfUpdating)
+        let outdatedPackagesGreedy: Set<OutdatedPackage> = try await getOutdatedPackagesInternal(brewPackagesTracker: brewPackagesTracker, forUpdatingType: .selfUpdating)
         
-        print("Contents of non-greedy update checker: \(try await outdatedPackagesNonGreedy.map(\.package.name)), \(try await outdatedPackagesNonGreedy.count)")
-        print("Contents of greedy update checker: \(try await outdatedPackagesGreedy.map(\.package.name)), \(try await outdatedPackagesGreedy.count)")
+        print("Contents of non-greedy update checker: \(try await outdatedPackagesNonGreedy.map{$0.package.name(withPrecision: .precise)}), \(try await outdatedPackagesNonGreedy.count)")
+        print("Contents of greedy update checker: \(try await outdatedPackagesGreedy.map{$0.package.name(withPrecision: .precise)}), \(try await outdatedPackagesGreedy.count)")
         
         /// This includes only those packages that are greedy
-        let difference: Set<OutdatedPackage> = try await outdatedPackagesGreedy.subtracting(outdatedPackagesNonGreedy)
+        let difference: Set<OutdatedPackage> = outdatedPackagesGreedy.subtracting(outdatedPackagesNonGreedy)
         
-        self.outdatedPackages = try await outdatedPackagesNonGreedy.union(difference)
+        self.outdatedPackages = outdatedPackagesNonGreedy.union(difference)
     }
 
     /// Load outdated packages into the outdated package tracker
-    private nonisolated func getOutdatedPackagesInternal(
+    private nonisolated
+    func getOutdatedPackagesInternal(
         brewPackagesTracker: BrewPackagesTracker,
         forUpdatingType updatingType: OutdatedPackage.PackageUpdatingType
     ) async throws -> Set<OutdatedPackage>
@@ -90,6 +91,12 @@ public extension OutdatedPackagesTracker
         /// Introduces an empty argument in case the updating is non-greedy
         let rawOutput: TerminalOutput = await shell(AppConstants.shared.brewExecutablePath, ["outdated", updatingType.argument, "--json=v2"])
 
+        AppConstants.shared.logger.debug("""
+        Output of outdated packages retrieval: 
+            Standard output: \(rawOutput.standardOutput)
+            Standard error: \(rawOutput.standardError)
+""")
+        
         // MARK: - Error checking
 
         if rawOutput.standardError.contains("HOME must be set")
@@ -140,7 +147,8 @@ public extension OutdatedPackagesTracker
 
     // MARK: - Helper functions
 
-    private nonisolated func getOutdatedFormulae(
+    private nonisolated
+    func getOutdatedFormulae(
         from intermediaryArray: [OutdatedPackageCommandOutput.Formulae],
         brewPackagesTracker: BrewPackagesTracker,
         forUpdatingType updatingType: OutdatedPackage.PackageUpdatingType
@@ -150,9 +158,9 @@ public extension OutdatedPackagesTracker
 
         for outdatedFormula in intermediaryArray
         {
-            if let foundOutdatedFormula = await brewPackagesTracker.successfullyLoadedFormulae.first(where: { $0.name == outdatedFormula.name })
+            if let foundOutdatedFormula = await brewPackagesTracker.successfullyLoadedFormulae.first(where: { $0.name(withPrecision: .precise) == outdatedFormula.name })
             {
-                finalOutdatedFormulaTracker.insert(.init(
+                await finalOutdatedFormulaTracker.insert(.init(
                     package: foundOutdatedFormula,
                     installedVersions: outdatedFormula.installedVersions,
                     newerVersion: outdatedFormula.currentVersion,
@@ -165,15 +173,16 @@ public extension OutdatedPackagesTracker
         return finalOutdatedFormulaTracker
     }
 
-    private func getOutdatedCasks(from intermediaryArray: [OutdatedPackageCommandOutput.Casks], brewPackagesTracker: BrewPackagesTracker, forUpdatingType updatingType: OutdatedPackage.PackageUpdatingType) async -> Set<OutdatedPackage>
+    private nonisolated
+    func getOutdatedCasks(from intermediaryArray: [OutdatedPackageCommandOutput.Casks], brewPackagesTracker: BrewPackagesTracker, forUpdatingType updatingType: OutdatedPackage.PackageUpdatingType) async -> Set<OutdatedPackage>
     {
         var finalOutdatedCaskTracker: Set<OutdatedPackage> = .init()
 
         for outdatedCask in intermediaryArray
         {
-            if let foundOutdatedCask = brewPackagesTracker.successfullyLoadedCasks.first(where: { $0.name == outdatedCask.name })
+            if let foundOutdatedCask = await brewPackagesTracker.successfullyLoadedCasks.first(where: { $0.name(withPrecision: .precise) == outdatedCask.name })
             {
-                finalOutdatedCaskTracker.insert(.init(
+                await finalOutdatedCaskTracker.insert(.init(
                     package: foundOutdatedCask,
                     installedVersions: outdatedCask.installedVersions,
                     newerVersion: outdatedCask.currentVersion,

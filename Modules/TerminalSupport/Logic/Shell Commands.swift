@@ -7,6 +7,7 @@
 
 import Foundation
 import CorkShared
+import Defaults
 
 @discardableResult
 public func shell(
@@ -36,7 +37,7 @@ public func shell(
 }
 
 /// # Usage:
-/// for await output in shell(AppConstants.shared.brewExecutablePath, ["install", package.name])
+/// for await output in shell(AppConstants.shared.brewExecutablePath, ["install", package.getPackageName(withPrecision: .precise)])
 /// {
 ///    switch output
 ///    {
@@ -210,7 +211,7 @@ public func shell(
 
     // MARK: - Block automatic cleanup is configured
 
-    if !UserDefaults.standard.bool(forKey: "isAutomaticCleanupEnabled")
+    if Defaults[.isAutomaticCleanupEnabled]
     {
         finalEnvironment["HOMEBREW_NO_INSTALL_CLEANUP"] = "TRUE"
     }

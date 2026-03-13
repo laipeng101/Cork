@@ -24,9 +24,9 @@ public enum ConfirmationDialog: Identifiable, Equatable
         switch self
         {
         case .uninstallPackage(let packageToUninstall):
-            return "action.uninstall.confirm.title.\(packageToUninstall.name)"
+            return "action.uninstall.confirm.title.\(packageToUninstall.name(withPrecision: .precise))"
         case .purgePackage(let packageToPurge):
-            return "action.purge.confirm.title.\(packageToPurge.name)"
+            return "action.purge.confirm.title.\(packageToPurge.name(withPrecision: .precise))"
         }
     }
 

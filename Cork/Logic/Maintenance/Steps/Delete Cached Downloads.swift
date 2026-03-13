@@ -8,10 +8,11 @@
 import Foundation
 import CorkShared
 import CorkModels
+import Defaults
 
 func deleteCachedDownloads() throws(CachedDownloadDeletionError)
 {
-    let shouldStrictlyCheckForHomebrewErrors: Bool = UserDefaults.standard.bool(forKey: "strictlyCheckForHomebrewErrors")
+    let shouldStrictlyCheckForHomebrewErrors: Bool = Defaults[.strictlyCheckForHomebrewErrors]
     
     /// This folder has the symlinks, so we have do **delete ONLY THE SYMLINKS**
     do

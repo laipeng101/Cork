@@ -7,13 +7,14 @@
 
 import Foundation
 
-public struct OutdatedPackage: Identifiable, Equatable, Hashable, Sendable
-{
+@Observable @MainActor
+public final class OutdatedPackage: Identifiable, Equatable, Hashable, Selectable
+{    
     public init(package: BrewPackage, installedVersions: [String], newerVersion: String, updatingManagedBy: PackageUpdatingType) {
         self.package = package
         self.installedVersions = installedVersions
         self.newerVersion = newerVersion
-        self.isMarkedForUpdating = true
+        self.isSelected = true
         self.updatingManagedBy = updatingManagedBy
     }
     
@@ -37,24 +38,22 @@ public struct OutdatedPackage: Identifiable, Equatable, Hashable, Sendable
         }
     }
 
-    public let id: UUID = .init()
-
     public let package: BrewPackage
 
     public let installedVersions: [String]
     public let newerVersion: String
 
-    public var isMarkedForUpdating: Bool
+    public var isSelected: Bool
 
     public let updatingManagedBy: PackageUpdatingType
 
-    public static func == (lhs: OutdatedPackage, rhs: OutdatedPackage) -> Bool
+    public nonisolated static func == (lhs: OutdatedPackage, rhs: OutdatedPackage) -> Bool
     {
-        return lhs.package.name == rhs.package.name
+        return lhs.package.getCompletePackageName() == rhs.package.getCompletePackageName()
     }
 
-    public func hash(into hasher: inout Hasher)
+    public nonisolated func hash(into hasher: inout Hasher)
     {
-        hasher.combine(package.name)
+        hasher.combine(package.getCompletePackageName())
     }
 }

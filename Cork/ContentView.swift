@@ -660,7 +660,7 @@ private extension View
                             shouldRemoveAllAssociatedFiles: false
                         )
                     } label: {
-                        Text("action.uninstall-\(packageToUninstall.name)")
+                        Text("action.uninstall-\(packageToUninstall.name(withPrecision: .precise))")
                     }
                     .keyboardShortcut(.defaultAction)
                     .asyncButtonStyle(.plainStyle)
@@ -676,7 +676,7 @@ private extension View
                             shouldRemoveAllAssociatedFiles: true
                         )
                     } label: {
-                        Text("action.purge-\(packageToPurge.name)")
+                        Text("action.purge-\(packageToPurge.name(withPrecision: .precise))")
                     }
                 }
             }, message: { dialogType in

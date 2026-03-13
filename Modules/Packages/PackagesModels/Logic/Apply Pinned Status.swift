@@ -20,7 +20,7 @@ extension BrewPackagesTracker
             switch formula
             {
             case .success(var success):
-                if namesOfPinnedPackages.contains(success.name)
+                if namesOfPinnedPackages.contains(success.name(withPrecision: .precise))
                 {
                     success.changePinnedStatus(to: .pinned)
                 }

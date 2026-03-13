@@ -101,7 +101,7 @@ extension TopPackagesTracker
                     if normalizedDownloadNumber > downloadsCutoff
                     {
                         return .init(
-                            name: rawTopFormula.formula,
+                            rawName: rawTopFormula.formula,
                             type: .formula,
                             installedOn: nil,
                             versions: .init(),
@@ -165,7 +165,7 @@ extension TopPackagesTracker
                     if normalizedDownloadNumber > downloadsCutoff
                     {
                         return .init(
-                            name: rawTopCask.cask,
+                            rawName: rawTopCask.cask,
                             type: .cask,
                             installedOn: nil,
                             versions: .init(),

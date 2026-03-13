@@ -143,7 +143,7 @@ private extension BrewPackagesTracker
                     switch rawResult
                     {
                     case .success(let success):
-                        return success.name
+                        return success.name(withPrecision: .precise)
                     case .failure(let failure):
                         return failure.errorDescription
                     }
@@ -324,7 +324,7 @@ private extension BrewPackagesTracker
                 
                 let loadedPackage: Result<BrewPackage, BrewPackage.PackageLoadingError> = .success(
                     .init(
-                        name: packageName,
+                        rawName: packageName,
                         type: packageURL.packageType,
                         isTagged: isPackageTagged,
                         isPinned: isPackagePinned,
