@@ -60,18 +60,22 @@ jobs:
 
       # --- 环境准备 ---
       
-      - name: Install mise
-        uses: jdx/mise-action@v2
+      - name: Install mise (via Homebrew)
+        run: |
+          brew update
+          brew list mise >/dev/null 2>&1 || brew install mise
+          mise --version
+          mise install
 
       - name: Generate Project with Tuist
         run: |
           # 针对 Xcode 26 的安全策略
           defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
           
-          tuist install
+          mise exec -- tuist install
           # 修改点：添加环境变量 TUIST_SELF_COMPILED=1
           export TUIST_SELF_COMPILED=1
-          tuist generate
+          mise exec -- tuist generate
 
 # --- 编译与打包 ---
 
