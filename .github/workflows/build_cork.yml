@@ -32,11 +32,13 @@ jobs:
           # 1. 添加上游仓库并拉取
           git remote add upstream https://github.com/buresdv/Cork.git || true
           git fetch upstream --tags
-          git fetch upstream "$UPSTREAM_BRANCH"
+          # 显式 refspec，避免 checkout 的 fetch 配置只拉取单分支导致没有 upstream/<branch>
+          git fetch upstream "$UPSTREAM_BRANCH:refs/remotes/upstream/$UPSTREAM_BRANCH"
           
           # 2. 先把 fork 的默认分支合并到最新 upstream，确保 fork 保持同步
-          git fetch origin "$FORK_BRANCH"
-          git checkout -B "$FORK_BRANCH" "origin/$FORK_BRANCH"
+          # 显式 refspec，避免没有 origin/<branch> 引用
+          git fetch origin "$FORK_BRANCH:refs/remotes/origin/$FORK_BRANCH"
+          git checkout -B "$FORK_BRANCH" "refs/remotes/origin/$FORK_BRANCH"
           git merge --no-edit "upstream/$UPSTREAM_BRANCH"
           git push origin "HEAD:$FORK_BRANCH"
           
