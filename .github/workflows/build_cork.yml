@@ -24,22 +24,39 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
 
-      - name: Sync and Checkout Latest Tag
+      - name: Sync Fork and Checkout Latest Tag
+        env:
+          FORK_BRANCH: ${{ github.event.repository.default_branch }}
+          UPSTREAM_BRANCH: main
         run: |
-          # 1. 添加上游仓库
+          # 1. 添加上游仓库并拉取
           git remote add upstream https://github.com/buresdv/Cork.git || true
           git fetch upstream --tags
+          # 显式 refspec，避免 checkout 的 fetch 配置只拉取单分支导致没有 upstream/<branch>
+          git fetch upstream "$UPSTREAM_BRANCH:refs/remotes/upstream/$UPSTREAM_BRANCH"
           
-          # 2. 获取最新的版本号 Tag (排除 alpha/beta)
+          # 2. 先把 fork 的默认分支合并到最新 upstream，确保 fork 保持同步
+          # 显式 refspec，避免没有 origin/<branch> 引用
+          git fetch origin "$FORK_BRANCH:refs/remotes/origin/$FORK_BRANCH"
+          git checkout -B "$FORK_BRANCH" "refs/remotes/origin/$FORK_BRANCH"
+          if git merge --no-edit "upstream/$UPSTREAM_BRANCH"; then
+            if ! git push origin "HEAD:$FORK_BRANCH"; then
+              echo "::warning::Fork sync push failed (branch may be protected); continuing build."
+            fi
+          else
+            echo "::warning::Fork sync merge failed; continuing build."
+            git merge --abort || true
+          fi
+          
+          # 3. 获取最新的版本号 Tag (排除 alpha/beta)
           # 逻辑：列出所有 v 开头的 tag -> 排序 -> 取最后一个
           LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
           
           echo "🔥 Detected latest stable version: $LATEST_TAG"
           
-          # 3. 强制切换到这个 Tag
+          # 4. 切换到这个 Tag 进行编译（保持为纯净的发布版）
           git checkout $LATEST_TAG
-          
-          # 注意：这里我们不再合并 main，因为我们要编译的是纯净的发布版
+          # 注意：fork 的同步发生在上一步；这里仍然只编译 Tag 对应的发布版本
 
       # --- 环境准备 ---
       
