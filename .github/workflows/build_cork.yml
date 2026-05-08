@@ -39,8 +39,14 @@ jobs:
           # 显式 refspec，避免没有 origin/<branch> 引用
           git fetch origin "$FORK_BRANCH:refs/remotes/origin/$FORK_BRANCH"
           git checkout -B "$FORK_BRANCH" "refs/remotes/origin/$FORK_BRANCH"
-          git merge --no-edit "upstream/$UPSTREAM_BRANCH"
-          git push origin "HEAD:$FORK_BRANCH"
+          if git merge --no-edit "upstream/$UPSTREAM_BRANCH"; then
+            if ! git push origin "HEAD:$FORK_BRANCH"; then
+              echo "::warning::Fork sync push failed (branch may be protected); continuing build."
+            fi
+          else
+            echo "::warning::Fork sync merge failed; continuing build."
+            git merge --abort || true
+          fi
           
           # 3. 获取最新的版本号 Tag (排除 alpha/beta)
           # 逻辑：列出所有 v 开头的 tag -> 排序 -> 取最后一个
