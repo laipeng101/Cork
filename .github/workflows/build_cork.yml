@@ -62,7 +62,6 @@ jobs:
       
       - name: Install mise (via Homebrew)
         run: |
-          brew update
           brew list mise >/dev/null 2>&1 || brew install mise
           mise --version
           mise install
