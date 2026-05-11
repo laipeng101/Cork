@@ -56,19 +56,7 @@ public func shell(
 {
     let task: Process = .init()
     
-    var finalEnvironment: [String: String] = .init()
-    
-    // MARK: - Set up the $HOME environment variable so brew commands work on versions 4.1 and up
-    
-    if var environment
-    {
-        environment["HOME"] = FileManager.default.homeDirectoryForCurrentUser.path
-        finalEnvironment = environment
-    }
-    else
-    {
-        finalEnvironment = ["HOME": FileManager.default.homeDirectoryForCurrentUser.path]
-    }
+    var finalEnvironment: [String: String] = ProcessInfo.processInfo.environment
     
     // MARK: - Set up mirrors if the environment variables exist
     
@@ -176,19 +164,7 @@ public func shell(
 {
     let task: Process = .init()
 
-    var finalEnvironment: [String: String] = .init()
-
-    // MARK: - Set up the $HOME environment variable so brew commands work on versions 4.1 and up
-
-    if var environment
-    {
-        environment["HOME"] = FileManager.default.homeDirectoryForCurrentUser.path
-        finalEnvironment = environment
-    }
-    else
-    {
-        finalEnvironment = ["HOME": FileManager.default.homeDirectoryForCurrentUser.path]
-    }
+    var finalEnvironment: [String: String] = ProcessInfo.processInfo.environment
 
     // MARK: - Set up mirrors if the environment variables exist
 
