@@ -12,18 +12,22 @@ import SwiftUI
 struct DependantsList: View
 {
     @Default(.showSearchFieldForDependenciesInPackageDetails) var showSearchFieldForDependenciesInPackageDetails: Bool
+    
+    @Environment(BrewPackagesTracker.self) var brewPackagesTracker: BrewPackagesTracker
 
     enum PackageDependantsDisplayStage: Equatable
     {
-        case loadingDependants, showingDependants(dependantsToShow: [MinimalHomebrewPackage]), noDependantsToShow
+        case loadingDependants, showingDependants(dependantsToShow: [BrewPackage]), noDependantsToShow
     }
 
     let packageDetails: BrewPackage.BrewPackageDetails
 
     @State private var isDependantsListExpanded: Bool = false
     @State private var dependantsSearchText: String = ""
+    
+    @State private var selectedDependants: Set<BrewPackage.ID> = .init()
 
-    private var dependantsToShow: [MinimalHomebrewPackage]
+    private var dependantsToShow: [BrewPackage]
     {
         switch packageDependantsDisplayStage
         {
@@ -36,7 +40,7 @@ struct DependantsList: View
             }
             else
             {
-                return dependants.filter { $0.name(withPrecision: .precise).localizedCaseInsensitiveContains(dependantsSearchText) }
+                return dependants.filter { $0.name(withPrecision: .general).localizedCaseInsensitiveContains(dependantsSearchText) }
             }
         case .noDependantsToShow:
             return .init()
@@ -56,7 +60,13 @@ struct DependantsList: View
                 }
                 else
                 {
-                    return .showingDependants(dependantsToShow: dependants)
+                    let dependantNames: Set<BrewPackageName> = Set(dependants.map(\.internalName))
+                    
+                    let extractedFullPackages: [BrewPackage] = {
+                        return brewPackagesTracker.successfullyLoadedFormulae.filter{ dependantNames.contains( $0.internalName ) }
+                    }()
+                    
+                    return .showingDependants(dependantsToShow: extractedFullPackages)
                 }
             }
             else
@@ -92,17 +102,23 @@ struct DependantsList: View
                     {
                         CustomSearchField(search: $dependantsSearchText, customPromptText: nil)
                     }
-
-                    List(dependantsToShow)
-                    { dependant in
-                        dependant.nameView(withComponents: .boundVersion)
-                            .contextMenu
-                            {
-                                dependant.contextMenu(using: dependant)
-                                Text("DEBUG")
-                            }
+                    
+                    Table(dependantsToShow)
+                    {
+                        TableColumn("package-details.dependencies.results.name")
+                        { dependant in
+                            dependant.nameView(withComponents: .boundVersion)
+                                .contextMenu
+                                {
+                                    dependant.contextMenu(builtInContent: .openPackageDetailButton)
+                                }
+                        }
+                        TableColumn("package-details.dependencies.results.version")
+                        { dependant in
+                            Text(dependant.getFormattedVersions())
+                        }
                     }
-                    .listStyle(.bordered(alternatesRowBackgrounds: true))
+                    .tableStyle(.bordered)
                 }
 
             } label: {
